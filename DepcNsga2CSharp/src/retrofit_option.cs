@@ -2,7 +2,7 @@
 // Why do I exist? It's memory efficient to have a single option
 // shared by many than a string description for each Retrofit.
 //
-class RetrofitOption
+public class RetrofitOption
 {
 	public static readonly string EFFICIENCY_KEY_SUFFICE	= "-Eff";
 	public static readonly string COST_KEY_SUFFIX			= "-Cost";

@@ -1,7 +1,7 @@
 //
 // Struct for Retrofit information
 //
-class Retrofit
+public class Retrofit
 {
 	protected RetrofitOption _option;
 	public RetrofitOption option { get { return _option; } protected set { _option = value; } }

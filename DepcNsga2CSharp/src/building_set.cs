@@ -1,21 +1,96 @@
 //// Imports ////
 
+using Antlr.Runtime;
+
 public class BuildingSet
 {
 	protected List<Building> _buildings	= new List<Building>();
 	public List<Building> buildings { get { return _buildings; } }
+	public int length { get { return buildings.Count; } }
 	//// Static stuff ////
 	// Methods 
 	public static BuildingSet LoadDataSet(string path)
 	{
-		BuildingSet set	= new BuildingSet();
+		BuildingSet set						= new BuildingSet();
+		GenericParsing.GenericParser parser = new GenericParsing.GenericParser(path);
+		parser.FirstRowHasHeader			= true;
+		
+		List<string> headers = new List<string>();
+		parser.Read();
+		for(int headerID = 0; headerID < parser.ColumnCount; headerID++)
+		{
+			headers.Add(parser.GetColumnName(headerID));
+		}
 
+		// Needs to be a do loop because we needed to parser.Read() to get the headers
+		do
+		{
+			Dictionary<string, string> data = new Dictionary<string, string>();
+			for (int headerID = 0; headerID < headers.Count; headerID++)
+			{
+				data[headers[headerID]] = parser[headers[headerID]];
+			}
+			Building building = new Building(
+				data,
+				float.Parse(data["CURRENT_ENERGY_EFFICIENCY"]),
+				data["CURRENT_ENERGY_RATING"],
+				float.Parse(data["TOTAL_FLOOR_AREA"])
+			);
+			/*
+				Add Retrofits
+			*/
+			// The do-nothing case
+			building.addRetrofit(new Retrofit(
+				RetrofitOption.AS_BUILT,
+				0,
+				0,
+				0
+			));
+			for (int retrofitOptionID = 0; retrofitOptionID < RetrofitOption.RETROFIT_OPTION_KEYS.Count; retrofitOptionID++)
+			{
+				string retrofitKey		= RetrofitOption.RETROFIT_OPTION_KEYS[retrofitOptionID];
+				RetrofitOption option	= RetrofitOption.RETROFIT_OPTION_DICTIONARY[retrofitKey];
+				float efficiency		= float.Parse(data[option.efficiencyKey]);
+				Retrofit retrofit = new Retrofit(
+					option,
+					float.Parse(data[option.costKey]),
+					efficiency,
+					(float)Math.Round(building.efficiency - efficiency, 0)
+				);
+				if(retrofit.difference > 0)
+				{
+					building.addRetrofit(retrofit);
+				}
+			}
+			// Add building to set
+			set.addBuilding(building);
+		} while (parser.Read());
 		return set;
 	}
 	// Constructors //
 	public BuildingSet()
 	{
 
+	}
+	public void addBuilding(Building building)
+	{
+		buildings.Add(building);
+	}
+	/*
+		GETTERS: Methods that get values that don't have magic members. E.g {get{return _area}{
+	*/
+	public float getDifferenceByEfficiency(float efficiency)
+	{
+		float difference = 0;
+		for (int buildingID = 0; buildingID < buildings.Count;  buildingID++)
+		{
+			float buildingDifference = efficiency - buildings[buildingID].efficiency;
+			if(buildingDifference > 0)
+			{
+				difference += buildingDifference;
+			}
+		}
+		return difference;
 	}
 	//def LoadDataSet(path) :
 	//	buildings	= __class__()
